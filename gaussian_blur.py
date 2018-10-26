@@ -1,31 +1,40 @@
-# -*- coding: utf-8 -*-
-
 from PIL import Image
 from math import pi, log, exp
 import numpy as np
-import sys
+import math
 
-def process(filename, r):
-    # должна обрабатывать файл filename гауссовым размытием в квадрате [-r, +r] x [-r, +r] 
-    # и записывать результат в <filename>.gaussblurred.png
-    img = Image.open(filename)
-    img.load()
+def blur_py(img, r):
+    q=r*0.38
+    s=0
+    w, h = img.size
+    a = np.array(img.getdata(), dtype=np.uint8).reshape(h, w)
+    b = np.zeros((h,w), dtype=np.uint8)
+    g = np.zeros((r*2+1,r*2+1))
+    k = np.zeros((r*2+1,r*2+1))
+    for y in range(-r,r+1):
+        for x in range(-r,r+1):
+            g[y+r,x+r]=1.0/(2.0*pi*q*q)*exp(-((x)*(x)+(y)*(y))/(2.0*q*q))
+            s+=g[y+r,x+r]
+    k=g/s
+    for i in range(r+1,h-r):
+        for l in range(r+1,w-r):
+             b[i,l]=np.sum(a[i-r:i+r+1,l-r:l+r+1]*k)
+                
+    print (k)
+    print ("a=",a)
+    print ("b=",b)
+    return Image.fromarray(b)
 
-    dx, dy = np.meshgrid(np.arange(-r, +r+1, 1.), np.arange(-r, +r+1, 1.0))
-    sigma = 0.38*r
-    gauss_dist = np.exp( -(dx*dx+dy*dy)/(2*sigma**2) ) / (2*pi*sigma**2)
-    coeff = gauss_dist / np.sum(gauss_dist)
+img = Image.open('darwin.png')
+img.load()
 
-    # код сюда ....
-    newimg = img
-    newimg.show()
-    newimg.save(filename+'.gaussblurred.png')
+print("Image size is", img.size)
+print("Image mode is", img.mode)
 
+print("getdata[1]=", img.getdata()[1])
+a = np.array(img, dtype=np.uint8).reshape(img.size[::-1])
+print("a[0,1]=", a[0,1])
+b = a[100:3000, 100:3000]
+pic = Image.fromarray(b)
 
-
-if __name__=='__main__':
-    # Запускать с командной строки с аргументом <имя файла>, например: python gauss.py darwin.png
-    if len(sys.argv) > 1:
-        main(sys.argv[1], 3)
-    else:
-        print("Must give filename.\n")
+blur_py(pic,3).show()
